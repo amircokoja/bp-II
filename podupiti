@@ -1,0 +1,184 @@
+/*ZADATAK 1
+Iz tabela Employees, EmployeeTerritories, Territories i Region baze Northwind prikazati prezime i ime uposlenika kao polje ime i prezime, teritoriju i regiju koju pokrivaju i stariji su od 30 godina.*/
+use NORTHWND
+select	E.FirstName + ' ' + E.LastName as ImePrezime, T.TerritoryDescription, r.RegionDescription, year(E.BirthDate) as 'GodRodj'
+from	Employees E inner join EmployeeTerritories ET
+		on E.EmployeeID = ET.EmployeeID inner join Territories T
+		on ET.TerritoryID = T.TerritoryID inner join Region R
+		on T.RegionID = R.RegionID
+where datediff(year, E.BirthDate, getdate()) > 30
+order by year(E.BirthDate) desc
+
+/*ZADATAK 2
+Iz tabela Employee, Order Details i Orders baze Northwind prikazati ime i prezime uposlenika kao polje ime i prezime, jediničnu cijenu, količinu i ukupnu vrijednost pojedinačne narudžbe kao polje ukupno za sve narudžbe u 1997. godini, pri čemu će se rezultati sortirati prema novokreiranom polju ukupno.*/
+select E.FirstName + ' ' + E.LastName as ImePrezime, OD.UnitPrice, OD.Quantity, OD.UnitPrice * OD.Quantity as Ukupno
+from	Employees E inner join Orders O
+		on E.EmployeeID = O.EmployeeID inner join [Order Details] OD
+		on OD.OrderID = O.OrderID
+where year(O.OrderDate) = '1997'
+order by 4
+
+/*ZADATAK 3
+Iz tabela Employee, Order Details i Orders baze Northwind prikazati ime uposlenika i ukupnu vrijednost svih narudžbi koje je taj uposlenik  napravio u 1996. godini ako je ukupna vrijednost veća od 50000, pri čemu će se rezultati sortirati uzlaznim redoslijedom prema polju ime. Vrijednost sume zaokružiti na dvije decimale.*/
+select E.FirstName, sum(OD.UnitPrice * OD.Quantity) Ukupno
+from	Employees E inner join Orders O
+		on E.EmployeeID = O.EmployeeID inner join [Order Details] OD
+		on OD.OrderID = O.OrderID
+where	year(O.OrderDate) = '1997'
+group by E.FirstName
+having sum(OD.UnitPrice * OD.Quantity) > 50000
+order by E.FirstName
+
+/*ZADATAK 4
+Iz tabela Categories, Products i Suppliers baze Northwind prikazati naziv isporučitelja (dobavljača), mjesto i državu isporučitelja (dobavljača) i naziv(e) proizvoda iz kategorije napitaka (pića) kojih na stanju ima više od 30 jedinica. Rezultat upita sortirati po državi.*/
+select S.CompanyName, S.City, S.Country, P.ProductName
+from	Categories C inner join Products P
+		on C.CategoryID = P.CategoryID inner join Suppliers S
+		on P.SupplierID = S.SupplierID
+where C.CategoryID = 1 and P.UnitsInStock > 30
+order by S.Country
+
+
+
+/*ZADATAK 5
+U tabeli Customers baze Northwind ID kupca je primarni ključ. U tabeli Orders baze Northwind ID kupca je vanjski ključ. Dati izvještaj: */
+/* a) koliko je ukupno kupaca evidentirano u bazi Northwind (u obje tabele) */
+select CustomerID
+from Customers
+union
+select CustomerID
+from Orders
+
+/* b) da li su svi kupci obavili narudžbu */
+select CustomerID
+from Customers
+intersect
+select CustomerID
+from Orders
+
+/* c) koji kupci nisu napravili narudžbu */
+select CustomerID
+from Customers
+except
+select CustomerID
+from Orders
+
+/*ZADATAK 6
+a) Provjeriti u koliko zapisa (slogova) tabele Orders nije unijeta vrijednost u polje regija kupovine. */
+select OrderID
+from Orders
+intersect
+select OrderID
+from Orders
+where ShipRegion is null
+
+/* b) Upotrebom tabela Customers i Orders baze Northwind prikazati ID kupca pri čemu u polje regija kupovine nije unijeta vrijednost, uz uslov da je kupac obavio narudžbu (kupac iz tabele Customers postoji u tabeli Orders). Rezultat sortirati u rastućem redoslijedu. */
+select CustomerID
+from Customers
+intersect
+select CustomerID
+from Orders
+where ShipRegion is null
+order by CustomerID
+
+
+/* Upotrebom tabela Customers i Orders baze Northwind prikazati ID kupca pri čemu u polje regija kupovine nije unijeta vrijednost i kupac nije obavio ni jednu narudžbu (kupac iz tabele Customers ne postoji u tabeli Orders). Rezultat sortirati u rastućem redoslijedu.*/
+select CustomerID
+from Customers
+except
+select CustomerID
+from Orders
+where ShipRegion is null
+
+/*ZADATAK 7
+Iz tabele HumanResources.Employee baze AdventureWorks2014 prikazati po 5 najstarijih zaposlenika muškog, odnosno, ženskog pola uz navođenje sljedećih podataka: radno mjesto na kojem se nalazi, datum rođenja, korisnicko ime i godine starosti. Korisničko ime je dio podatka u LoginID. Rezultate sortirati prema polu uzlaznim, a zatim prema godinama starosti silaznim redoslijedom.*/
+use AdventureWorks2014
+select top 5 Gender, JobTitle, BirthDate, substring(LoginID, charindex('\', LoginID) + 1, 10) as Username, datediff(year, BirthDate, getdate()) as 'Godine starosti'
+from HumanResources.Employee
+where Gender = 'M'
+union
+select top 5 Gender, JobTitle, BirthDate, substring(LoginID, charindex('\', LoginID) + 1, 10) as Username, datediff(year, BirthDate, getdate()) as 'Godine starosti'
+from HumanResources.Employee
+where Gender = 'F'
+order by 1 asc, 5 desc
+
+/*ZADATAK 8
+Iz tabele HumanResources.Employee baze AdventureWorks2014 prikazati po 3 zaposlenika sa najdužim stažom bez obzira da li su u braku i obavljaju poslove inžinjera uz navođenje sljedećih podataka: radno mjesto na kojem se nalazi, datum zaposlenja i bračni status. Ako osoba nije u braku plaća dodatni porez,inače ne plaća. Rezultate sortirati prema bračnom statusu uzlaznim, a zatim prema stažu silaznim redoslijedom.*/
+
+select top 3 JobTitle, HireDate, MaritalStatus, datediff(year, HireDate, getdate()) as Staz, (' ') as PlacanjePoreza
+from	HumanResources.Employee
+where	JobTitle like '%engineer%' and MaritalStatus = 'M' and JobTitle not like '%engineering%'
+union
+select top 3 JobTitle, HireDate, MaritalStatus, datediff(year, HireDate, getdate()) AS Staz, ('placa dodatni porez') AS porez
+from	HumanResources.Employee
+where	MaritalStatus = 'S' and JobTitle like '%engineer%' 
+		and JobTitle not like '%engineering%'
+order by 3 asc, 4 desc
+
+
+/*ZADATAK 9
+Iz tabela HumanResources.Employee i Person.Person prikazati po 5 osoba koje se nalaze na 1, odnosno, 4.  organizacionom nivou, uposlenici su i žele primati email ponude od AdventureWorksa uz navođenje sljedećih polja: ime i prezime osobe kao jedinstveno polje, organizacijski nivo na kojem se nalazi i da li prima email promocije. Pored ovih uvesti i polje koje će sadržavati poruke: Ne prima, Prima selektirane i Prima. Sadržaj novog polja ovisi o vrijednosti polja EmailPromotion. Rezultat sortirati prema organizacijskom nivou i dodatno uvedenom polju.*/
+select top 5 P.FirstName + ' ' + P.LastName as ImePrezime, E.OrganizationLevel, P.EmailPromotion, 'Ne prima' as MailPromocije
+from	HumanResources.Employee E inner join Person.Person P
+		on E.BusinessEntityID = P.BusinessEntityID
+where	E.OrganizationLevel = '1' and P.EmailPromotion = '0'
+union
+select top 5 P.FirstName + ' ' + P.LastName as ImePrezime, E.OrganizationLevel, P.EmailPromotion, 'Prima selektirane' as MailPromocije
+from	HumanResources.Employee E inner join Person.Person P
+		on E.BusinessEntityID = P.BusinessEntityID
+where	E.OrganizationLevel = '4' and P.EmailPromotion = '1'
+union
+select top 5 P.FirstName + ' ' + P.LastName as ImePrezime, E.OrganizationLevel, P.EmailPromotion, 'Prima' as MailPromocije
+from	HumanResources.Employee E inner join Person.Person P
+		on E.BusinessEntityID = P.BusinessEntityID
+where	E.OrganizationLevel = '4' and P.EmailPromotion = '2'
+order by 2, 4
+
+/*ZADATAK 10
+Iz tabela Sales.SalesOrderDetail i Production.Product prikazati 10 najskupljih stavki prodaje uz navođenje polja: naziv proizvoda, količina, cijena i iznos. Cijenu i iznos zaokružiti na dvije decimale. Iz naziva proizvoda odstraniti posljednji dio koji sadržava cifre i zarez. U rezultatu u polju količina na broj dodati 'kom.', a u polju cijena i iznos na broj dodati 'KM'.*/
+
+select top 10 substring(P.Name,1, len(P.Name) -4) as Proizvod, convert(nvarchar, S.OrderQty) + 'kom' as Kolicina, convert(nvarchar, round(S.UnitPrice, 2)) + ' KM' as Cijena, convert(nvarchar, round(S.LineTotal, 2)) + ' KM' as Ukupno
+from	Sales.SalesOrderDetail S inner join Production.Product P
+		on S.ProductID = P.ProductID
+order by round(S.LineTotal, 2) desc, 2 desc
+
+/*ZADATAK 11*/
+/* a) Upotrebom podupita iz tabele Customers baze Northwind dati prikaz svih polja tabele pri čemu je kupac iz Berlina. */
+use NORTHWND
+select *
+from	Customers
+where	CustomerID =
+		(select CustomerID
+		from	Customers C	
+		where	C.City = 'Berlin')
+
+/* b)Upotrebom podupita iz tabele Customers baze Northwind dati prikaz svih polja tabele pri čemu je kupac iz Londona. */
+select *
+from	Customers
+where	CustomerID in
+		(select CustomerID
+		from Customers
+		where City = 'London')
+
+/*ZADATAK 12*/
+/* a) Upotrebom podupita iz tabele Order Details baze Northwind dati prikaz svih polja tabele kod kojih nije odobren popust. */
+select	*
+from	[Order Details]
+where	Discount in
+		(select Discount
+		from [Order Details]
+		where Discount > 0)
+
+/* b) Upotrebom podupita iz tabele Order Details baze Northwind dati prikaz svih polja tabele kod kojih je odobreni popust 25%. */
+select	*
+from	[Order Details]
+where	Discount in
+		(select Discount
+		from [Order Details]
+		where Discount = '0.25')
+
+/*ZADATAK 13
+Upotrebom podupita iz tabele Order Details baze Northwind dati prikaz popusta i količine pri čemu će vrijednost popusta biti veće od bilo koje vrijednosti popusta koje se dobiju uz uslov da je količina veća od 2. Rezultat sortirati po popustu u opadajućem redoslijedu.*/
+
+
+
