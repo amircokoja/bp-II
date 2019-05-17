@@ -179,6 +179,71 @@ where	Discount in
 
 /*ZADATAK 13
 Upotrebom podupita iz tabele Order Details baze Northwind dati prikaz popusta i količine pri čemu će vrijednost popusta biti veće od bilo koje vrijednosti popusta koje se dobiju uz uslov da je količina veća od 2. Rezultat sortirati po popustu u opadajućem redoslijedu.*/
+select Discount, Quantity
+from [Order Details]
+where Discount > any
+  (select distinct Discount
+  from [Order Details]
+  where Quantity > 2)
+order by Discount desc
 
+/*ZADATAK 14
+Upotrebom podupita iz tabele Order Details baze Northwind dati prikaz popusta i količine pri čemu će vrijednost popusta biti veća od svih vrijednosti popusta koje se dobiju uz uslov da je količina veća od 2. Rezultat sortirati po popustu u opadajućem redoslijedu.*/
+select Discount, Quantity
+from [Order Details]
+where Discount > all
+  (select distinct Discount
+  from [Order Details]
+  where Quantity > 2)
+order by Discount desc
+
+/*ZADATAK 15
+Iz tabele Products baze Nortwind putem podupita dati pregled odstupanja jedinica proizvoda u narudžbi od prosječnog broja jedinica proizvoda. Rezultat treba da sadrži i id i naziv proizvoda. Sortirati po odstupanju.*/
+select ProductID, ProductName, UnitsOnOrder -	(select avg(UnitsOnOrder) 
+												from Products) as Odstupanje
+from Products
+order by 3
+
+/*ZADATAK 16
+Iz tabele Orders baze Nortwind putem podupita dati pregled odstupanja troška prevoza od minimalne i maksimalne vrijednosti troška prevoza. Rezultat treba da sadrži datum narudžbe, trošak prevoza, odstupanje od minimalne vrijednosti, minimalnu vrijednost, odstupanje od maksimalne vrijednosti i maksimalnu vrijednost, pri čemu će trošak prevoza u granicama od 250 do 750. Sortirati po trošku prevoza.*/
+select OrderDate, Freight, Freight - (select min(Freight) from Orders) as MinOdstupanje, (select min(Freight) from Orders) as MinV, Freight - (select max(Freight) from Orders) as MaxOdstupanje, (select max(Freight) from Orders) as MaxV
+from Orders
+where Freight > 250 and Freight < 750
+order by Freight
+
+/*ZADATAK 17
+Iz tabele Order Details baze Northwind dati prikaz ID narudžbe, ID proizvoda i jedinične cijene, te razliku cijene proizvoda u odnosu na srednju vrijednost cijene za sve proizvode u tabeli. Rezultat sortirati prema vrijednosti razlike u rastućem redoslijedu.*/
+select OrderID, ProductID, UnitPrice, UnitPrice - (select avg(UnitPrice) from [Order Details]) as Razlika
+from [Order Details]
+order by 4
+
+/*ZADATAK 18
+Iz tabele Products baze Northwind za sve proizvoda kojih ima na stanju dati prikaz ID proizvoda, naziv proizvoda i stanje zaliha, te razliku stanja zaliha proizvoda u odnosu na srednju vrijednost stanja za sve proizvode u tabeli. Rezultat sortirati prema vrijednosti razlike u opadajućem redoslijedu.*/
+select ProductID, ProductName, UnitsInStock, UnitsInStock - (select avg(UnitsInStock) from Products) as Razlika
+from Products
+where UnitsInStock > 0
+order by 4
+
+/*ZADATAK 19
+Upotrebom tabela Orders i Order Details baze Northwind prikazati ID narudžbe i kupca koji je kupio više od 10 komada proizvoda čiji je ID 15.*/
+select O.OrderID, CustomerID
+from Orders O inner join [Order Details] OD
+  on O.OrderID = OD.OrderID
+where OD.Quantity > 10 and OD.ProductID = 15
+
+select OrderID, CustomerID
+from Orders O
+where 10 < (select OD.Quantity
+			from [Order Details] OD
+			where ProductID = 15 and O.OrderID = OD.OrderID)
+
+/*ZADATAK 20
+Upotrebom tabela sales i stores baze pubs prikazati ID i naziv prodavnice u kojoj je naručeno više od 1 komada publikacije čiji je ID 6871.*/
+use pubs
+select stor_id, stor_name
+from stores st
+where 1 <	(select qty
+			from sales s
+			where ord_num = '6871' and s.stor_id = st.stor_id)
 
 
