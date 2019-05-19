@@ -1,0 +1,141 @@
+CREATE DATABASE ib170050 ON PRIMARY
+(
+NAME = 'ib170050',
+FILENAME = 'c:\BP2\data\ib170050.mdf',
+SIZE = 5 MB,
+MAXSIZE = UNLIMITED,
+FILEGROWTH = 17000%
+),
+
+(
+NAME = 'ib170050_sek',
+FILENAME = 'c:\BP2\data\ib170050_sek.ndf',
+SIZE = 5 MB,
+MAXSIZE = UNLIMITED,
+FILEGROWTH = 10%
+)
+
+LOG ON
+(
+NAME = 'ib170050_log',
+FILENAME = 'c:\BP2\log\ib170050_log.ldf',
+SIZE = 2 MB,
+MAXSIZE = UNLIMITED,
+FILEGROWTH = 5%
+)
+
+use ib170050
+go
+create table Studenti
+(
+StudentID int identity(170000, 1) constraint PK_StudentID primary key not null,
+Ime nvarchar(15) not null,
+Prezime nvarchar(20) not null,
+JMBG nvarchar(13) not null constraint UQ_JMBG unique nonclustered check (len(JMBG)=13),
+DatumRodj date,
+Email nvarchar(40) constraint UQ_Email unique nonclustered
+)
+
+/*
+•	Testovi
+	-	TestID					primarni ključ, početna vrijednost 1, popunjava se sa inkrementom 1
+	-	Datum					datumski tip za unos datuma i vremena (obavezan unos),
+	-	Naziv 					znakovni tip 50 karaktera (obavezan unos),
+	-	Oznaka					znakovni tip 10 karaktera (obavezan unos i jedinstvena vrijednost),
+	-	Oblast 				znakovni tip 50 karaktera (obavezan unos),
+	-	MaksBrojBod		cjelobrojni tip (obavezan unos),
+
+*/
+create table Testovi
+(
+TestID int identity(1,1) constraint PK_TestID primary key,
+Datum date not null,
+Naziv nvarchar(50) not null,
+Oznaka nvarchar(10) not null constraint UQ_Oznaka unique,
+Oblast nvarchar(50) not null,
+MaksBrojBod int not null
+)
+
+/*
+•	RezultatiTesta
+	-	Polozio  			polje za unos ishoda testiranja – DA/NE (obavezan unos)
+	-	OsvBodovi			polje za unos decimalnog broja (obavezan unos),
+	-	Napomena	 			polje za unos 100 karaktera.
+Primarni ključ tabele RezultatiTesta formirati kao kombinaciju primarnih ključeva prve dvije tabele.
+
+Napomena: Student može polagati više testova i za svaki test ostvariti određene rezultate, pri čemu student ne može 2 puta polagati isti test. Isti test može polagati više studenata.
+*/
+
+create table RezultatiTesta
+(
+StudentID int constraint FK_RezultatiTestaStudentID foreign key (StudentID) references Studenti(StudentID),
+TestID int constraint FK_RezultatiTestaTestID foreign key (TestID) references Testovi(TestID),
+Polozio bit not null,
+OsvBodovi decimal(18,2) not null,
+Napomena nvarchar(100)
+)
+
+/*
+Kreirati referenciranu tabelu Gradovi koja će se referirati na tabelu Studenti i sadržavati polja GradID i NazivGrada. 
+Nakon kreiranja tabele Gradovi u tabeli Studenti dodati referencu prema tabeli Gradovi, te polje Adresa dužine 100 znakova.
+*/
+create table Gradovi
+(
+GradID int constraint PK_GradID primary key identity(1,1),
+NazivGrada nvarchar(30) not null
+)
+
+alter table Studenti
+add GradID int constraint FK_StudentiGradID foreign key (GradID) references Gradovi(GradID),
+Adresa nvarchar(100) null
+
+/*
+ZADATAK
+U tabelu Studenti importovati 10 kupaca iz baze podataka AdventureWorks2014 i to sljedeće kolone:
+
+-	FirstName (Person) -> Ime,
+-	LastName (Person) -> Prezime,
+-	Zadnjih 13 karaktera kolone rowguid (Customer) - crticu zamijeniti brojem 0 -> JMBG,
+-	EmailAddress (EmailAddress) -> Email.
+U zagradama su navedeni nazivi tabela. 
+*/
+
+insert into Studenti(Ime, Prezime, JMBG, Email)
+select top 10 P.FirstName, P.LastName, replace(right(P.rowguid, 13), '-', 0), EA.EmailAddress 
+from AdventureWorks2014.Person.Person P inner join AdventureWorks2014.Sales.Customer C
+	on P.BusinessEntityID = C.PersonID inner join AdventureWorks2014.Person.EmailAddress as EA
+	on EA.BusinessEntityID = P.BusinessEntityID
+
+
+/*
+ZADATAK
+a) U tabelu Testovi unijeti minimalno 3 zapisa, 
+b) U tabelu RezultatiTesta unijeti 10 zapisa.
+*/
+use ib170050
+insert into Testovi
+values
+('05.06.2015', 'MS Access', 'MSACC1', 'Baze podataka', 50),
+('06.09.2015', 'SQL Server', 'SQLS1', 'Baze podataka', 70),
+(getdate(), 'ASP.NET', 'ASPNET1', 'Web programiranje', 80)
+
+insert into RezultatiTesta (StudentID, TestID, Polozio, OsvBodovi)
+values
+(170001, 1, 1, 42),
+(170002, 1, 0, 18),
+(170003, 1, 1, 26),
+(170002, 2, 1, 68),
+(170003, 2, 0, 20),
+(170002, 3, 1, 72),
+(170003, 3, 1, 67),
+(170005, 3, 0, 27),
+(170006, 3, 1, 72),
+(170007, 3, 0, 38)
+
+select * from RezultatiTesta
+
+/*
+ZADATAK
+Kreirati upit koji prikazuje rezultate testiranja za određeni test (ASPNET1). 
+Kao rezultat upita prikazati sljedeće kolone: Ime i Prezime, jmbg studenta, Datum, Naziv, Oznaku, Oblast i maksimalan broj bodova na testu, te polje položio, osvojene bodove i procentualni rezultat testa.
+*/
