@@ -139,3 +139,68 @@ ZADATAK
 Kreirati upit koji prikazuje rezultate testiranja za određeni test (ASPNET1). 
 Kao rezultat upita prikazati sljedeće kolone: Ime i Prezime, jmbg studenta, Datum, Naziv, Oznaku, Oblast i maksimalan broj bodova na testu, te polje položio, osvojene bodove i procentualni rezultat testa.
 */
+select S.Ime + ' ' + S.Prezime as ImePrezime, S.JMBG, T.Datum, T.Naziv, T.Oznaka, T.Oblast, T.MaksBrojBod, RT.Polozio, RT.OsvBodovi, convert(decimal(18,2),round(RT.OsvBodovi/T.MaksBrojBod * 100, 2)) as Procenat
+from Studenti S inner join RezultatiTesta RT
+	on S.StudentID = RT.StudentID inner join Testovi T
+	on RT.TestID = T.TestID
+where T.Oznaka = 'ASPNET1'
+
+/*
+ZADATAK
+Uz upotrebu podupita kreirati upit koji prikazuje Naziv testa, Datum održavanja, ukupan broj studenata koji su položili i ukupan broj studenata koji nisu položili test. Uzeti u obzir samo testove na kojima su minimalno dva studenata položila.
+
+*/
+select T.Naziv, T.Datum, (select count(StudentID) from RezultatiTesta RT2 where Polozio = 1 and RT2.TestID = T.TestID) as Polozili, (select count(StudentID) from RezultatiTesta RT2 where Polozio = 0 and RT2.TestID = T.TestID) as 'Nisu polozili'
+from Testovi T inner join RezultatiTesta RT
+	on T.TestID = RT.TestID
+where RT.Polozio = 1
+group by T.Naziv, T.Datum, T.TestID
+having count(RT.StudentID) >= 2
+
+--or
+
+SELECT	T.Naziv, T.Datum, COUNT(RT.StudentID) AS 'Polozili',
+
+		(SELECT COUNT(RT.StudentID)
+		FROM RezultatiTesta AS RT
+		WHERE RT.Polozio = 0 AND RT.TestID= T.TestID) AS 'Nisu polozili'
+
+FROM		Testovi AS T INNER JOIN RezultatiTesta AS RT
+		ON T.TestID= RT.TestID
+WHERE	RT.Polozio = 1
+GROUP BY	T.Naziv, T.Datum, T.TestID
+HAVING	COUNT(RT.StudentID) >= 2
+
+
+/*
+ZADATAK
+Izmijeniti rezultate testiranja svim Studentima koji su položili određeni test (ASPNET1). 
+Svim studentima koji su položili test broj osvojenih bodova uvećati za 5.
+*/
+
+update RezultatiTesta
+set OsvBodovi = OsvBodovi + 5
+where Polozio = 1
+
+/*
+Obrisati jedan test i ostvarene rezultate na testu (MSACC1).
+*/
+select * from RezultatiTesta
+select * from Testovi
+
+delete from RezultatiTesta
+from RezultatiTesta RT join Testovi T
+	on RT.TestID = T.TestID
+where Oznaka = 'MSACC1'
+
+/*
+Obrisati tabelu Gradovi i ukloniti polja GradID i Adresa u tabeli Studenti.
+*/
+
+alter table Studenti
+drop constraint FK_StudentiGradID
+
+alter table Studenti
+drop column GradID, Adresa
+
+drop table Gradovi
