@@ -1,0 +1,204 @@
+use AdventureWorks2014
+go
+--132
+create procedure HumanResources.proc_EmployesParameter
+(
+	@EmployeeID int = null,
+	@FirstName nvarchar (50) = null,
+	@LastName nvarchar (50) = null,
+	@Gender char(1) = null
+)
+as
+begin
+	select	E.BusinessEntityID, P.FirstName, P.LastName, E.Gender
+	from	HumanResources.Employee E inner join Person.Person P
+	on		E.BusinessEntityID = P.BusinessEntityID
+	where	E.BusinessEntityID = @EmployeeID or
+			P.FirstName = @FirstName or
+			P.LastName = @LastName or
+			E.Gender = @Gender
+end
+
+--1
+EXEC HumanResources.proc_EmployesParameter @EmployeID = 20
+
+--2
+EXEC HumanResources.proc_EmployesParameter @LastName='Miller'
+
+--3
+EXEC HumanResources.proc_EmployesParameter @LastName='Abercrombie', @Gender = 'M'
+----------------------------------------------------------------------------------------
+alter procedure HumanResources.proc_EmployesParameter
+(
+	@EmployeeID int = null,
+	@FirstName nvarchar (50) = null,
+	@LastName nvarchar (50) = null,
+	@Gender char(1) = 'F'
+)
+as
+begin
+	select	E.BusinessEntityID, P.FirstName, P.LastName, E.Gender
+	from	HumanResources.Employee E inner join Person.Person P
+	on		E.BusinessEntityID = P.BusinessEntityID
+	where	(E.BusinessEntityID = @EmployeeID or
+			P.FirstName = @FirstName or
+			P.LastName = @LastName) and
+			E.Gender = @Gender
+end
+
+exec HumanResources.proc_EmployesParameter @EmployeeID = 52
+
+exec HumanResources.proc_EmployesParameter @LastName = 'Miller'
+----------------------------------------------------------------------------------------
+use Northwind
+go
+
+
+create procedure Porudzba
+(
+	@ContactName nvarchar (30) = null,
+	@ProductName nvarchar (40) = null,
+	@UnitPrice money = null,
+	@Quantity smallint = null,
+	@Discount real = null
+)
+as
+begin
+	select C.ContactName, P.ProductName, OD.UnitPrice, OD.Quantity, OD.Discount
+	from Products P inner join [Order Details] as OD
+			on P.ProductID = OD.ProductID inner join Orders O
+			on OD.OrderID = O.OrderID inner join Customers C
+			on O.CustomerID = C.CustomerID
+	where	C.ContactName = @ContactName or
+			P.ProductName = @ProductName or
+			OD.UnitPrice = @UnitPrice or
+			OD.Quantity = @Quantity or
+			OD.Discount = @Discount
+end
+
+exec Porudzba @ContactName = 'Mario Pontes'
+----------------------------------------------------------------------------------------
+use AdventureWorks2014
+go
+
+create procedure Production.Proc_Product
+(
+	@P_name nvarchar (55) = null,
+	@Color nvarchar (15) = null,
+	@Ps_name nvarchar (50) = null,
+	@ListPrice money = null,
+	@AverageLeadTime int = null,
+	@MinOrderQty int = null,
+	@MaxOrderQty int = null,
+	@Razlika int = null
+)
+as
+begin
+	select	top 100 percent P.Name as NazivProizvoda, P.Color as Boja, PS.Name as NazivPotkategorije, round(PL.ListPrice, 2) as CijenaProizvoda, PV.AverageLeadTime as ProsjecnoVrijemeIsporuke, PV.MinOrderQty as MinKolicina, PV.MaxOrderQty as MaxKolicina, PV.MaxOrderQty - PV.MinOrderQty as Razlika
+	from	Production.Product P inner join Production.ProductListPriceHistory PL
+			on P.ProductID = PL.ProductID inner join Production.ProductSubcategory PS
+			on P.ProductSubcategoryID = PS.ProductSubcategoryID inner join Purchasing.ProductVendor PV
+			on PV.ProductID = P.ProductID
+	where	P.Name = @P_name or
+			P.Color = @Color or
+			PS.Name = @Ps_name or
+			PL.ListPrice = @ListPrice or
+			PV.AverageLeadTime = @AverageLeadTime or
+			PV.MinOrderQty = @MinOrderQty or
+			PV.MaxOrderQty = @MaxOrderQty or
+			PV.MaxOrderQty - PV.MinOrderQty = @Razlika
+order by 4
+end
+
+exec Production.Proc_Product @MaxOrderQty = 1000
+
+exec Production.Proc_Product @Razlika = 350
+
+exec Production.Proc_Product @Color = 'Red', @Ps_name = 'Helmets'
+
+----------------------------------------------------------------------------------------
+
+create procedure Production.Proc_Product2
+(
+	@P_name nvarchar (55) = null,
+	@Color nvarchar (15) = null,
+	@Ps_name nvarchar (50) = null,
+	@ListPrice money = null,
+	@AverageLeadTime int = null,
+	@MinOrderQty int = null,
+	@MaxOrderQty int = null,
+	@Razlika int = null
+)
+as
+begin
+	select	top 100 percent P.Name as NazivProizvoda, P.Color as Boja, PS.Name as NazivPotkategorije, round(PL.ListPrice, 2) as CijenaProizvoda, PV.AverageLeadTime as ProsjecnoVrijemeIsporuke, PV.MinOrderQty as MinKolicina, PV.MaxOrderQty as MaxKolicina, PV.MaxOrderQty - PV.MinOrderQty as Razlika
+	from	Production.Product P inner join Production.ProductListPriceHistory PL
+			on P.ProductID = PL.ProductID inner join Production.ProductSubcategory PS
+			on P.ProductSubcategoryID = PS.ProductSubcategoryID inner join Purchasing.ProductVendor PV
+			on PV.ProductID = P.ProductID
+	where	P.Name = @P_name or
+			P.Color = @Color or
+			PS.Name = @Ps_name or
+			PL.ListPrice = @ListPrice or
+			PV.AverageLeadTime = @AverageLeadTime or
+			PV.MinOrderQty = @MinOrderQty or
+			PV.MaxOrderQty = @MaxOrderQty or
+			PV.MaxOrderQty - PV.MinOrderQty = @Razlika or
+			PV.MaxOrderQty - PV.MinOrderQty > 500
+order by 8, 4
+end
+
+exec Production.Proc_Product2 @MinOrderQty = 100
+exec Production.Proc_Product2 @Color = 'Red'
+exec Production.Proc_Product2 @Ps_name = 'Helmets'
+----------------------------------------------------------------------------------------
+create procedure Production.proc_PPVPS
+(
+	@p_name nvarchar (50) = null,
+	@color nvarchar (15) = null,
+	@ps_name nvarchar (50) = null,
+	@count_AverageLeadTime int = null
+)
+as
+begin
+	select P.Name, P.Color, PS.Name, count(PV.AverageLeadTime) as count_ProsjecnoVrijemeIsporuke
+	from	Production.Product P inner join Purchasing.ProductVendor PV
+			on P.ProductID = PV.ProductID inner join Production.ProductSubcategory PS
+			on P.ProductSubcategoryID = PS.ProductSubcategoryID
+	--group by P.Name, P.Color, PS.Name
+	--order by 4
+	where	P.Name = @p_name or
+			P.Color = @color or
+			PS.Name = @ps_name or
+			AverageLeadTime >= 0
+	group by P.Name, P.Color, PS.Name
+	having count(PV.AverageLeadTime) = @count_AverageLeadTime
+end
+
+exec Production.proc_PPVPS @count_AverageLeadTime = 1
+
+exec Production.proc_PPVPS @count_AverageLeadTime = 2
+----------------------------------------------------------------------------------------
+create database TEST
+
+use TEST
+go
+
+create trigger	preventiva
+				on database
+				for drop_table, alter_table
+as
+	print 'Brisanje i izmjene nad objektima nisu dozvoljeni!'
+	rollback
+----------------------------------------------------------------------------------------
+create table Test
+(
+TestID int
+)
+
+drop table Test
+
+alter table Test
+add kolona2 int
+
+
