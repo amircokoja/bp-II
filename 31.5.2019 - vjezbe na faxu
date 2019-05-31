@@ -1,0 +1,174 @@
+use Northwind
+go
+create procedure proc_Dobavljac
+(
+	@CompanyName nvarchar(40) = null,
+	@Adrdress nvarchar(60) = null,
+	@City nvarchar(15) = null,
+	@ProductName nvarchar(40) = null,
+	@UnitPrice money = null
+)
+as
+begin
+select	S.CompanyName, S.Address, S.City, P.ProductName, P.UnitPrice
+from	Products P inner join Suppliers S
+on		P.SupplierID = S.SupplierID
+where	CompanyName = @CompanyName or
+		Address = @Adrdress or
+		City = @City or
+		ProductName = @ProductName or
+		UnitPrice = @UnitPrice
+order by 5
+end
+
+exec proc_Dobavljac @CompanyName = 'Exotic Liquids'
+
+---------------------------------------------------------------------------------------
+--alter authorization on database :: Nortwind
+--da mozemo koristiti dijagram
+
+create procedure proc_Autori 
+(
+	@ImePrezime nvarchar(40) = null,
+	@Grad nvarchar(20) = null,
+	@Naslov nvarchar(80) = null,
+	@Vrsta nvarchar(12) = null,
+	@Cijena money = null,
+	@DecimalniOstatak decimal(8,2) = null
+)
+as
+begin
+select	a.au_fname + ' ' + a.au_fname as ImePrezime, a.city, t.title, t.type, t.price, t.price - floor(t.price) as DecimalniDio
+from	titles t inner join titleauthor ta
+		on t.title = ta.title_id inner join authors a
+		on ta.au_id = a.au_id
+where	a.au_fname + a.au_fname = @ImePrezime or
+		a.city = @Grad or
+		t.title = @Naslov or
+		t.type = @Vrsta or
+		t.price = @Cijena or
+		t.price - floor(t.price) = @DecimalniOstatak
+end
+---------------------------------------------------------------------------------------
+go
+use Northwind
+go
+
+create procedure proc_Narudzba
+(
+	@CompanyName nvarchar(40) = null,
+	@City nvarchar(40) = null,
+	@DayDiff int = null,
+	@Employee nvarchar(40) = null
+)
+as
+begin
+select	C.CompanyName, C.City, datediff(day, O.OrderDate, O.ShippedDate) as DaniRazlike, E.FirstName + ' ' + E.LastName as EmployeeName
+from	Customers C inner join Orders O
+		on C.CustomerID = O.CustomerID inner join Employees E
+		on O.EmployeeID = E.EmployeeID
+where	datediff(day, O.OrderDate, O.ShippedDate) > 10 and 
+		(C.CompanyName = @CompanyName or
+		C.City = @City or
+		datediff(day, O.OrderDate, O.ShippedDate) = @DayDiff or
+		E.FirstName + ' ' + E.LastName = @Employee)
+order by 3
+end
+
+exec proc_Narudzba @Employee = 'Andrew Fuller'
+exec proc_Narudzba @Employee = 'Nancy Davolio'
+exec proc_Narudzba @City = 'Rio de Janeiro'
+exec proc_Narudzba @DayDiff = '12'
+---------------------------------------------------------------------------------------
+go
+use AdventureWorks2014
+go
+
+create procedure proc_Product
+(
+	@p_name nvarchar(50) = null,
+	@Color nvarchar(15) = null,
+	@ps_name nvarchar(50) = null,
+	@ListPrice money = null,
+	@AverageLeadTime int = null,
+	@MinOrderQty int = null,
+	@MaxOrderQty int = null,
+	@Razlika int = null
+)
+as
+begin
+select	top 100 percent P.Name, P.Color, PS.Name, PLH.ListPrice, PV.AverageLeadTime, PV.MinOrderQty, PV.MaxOrderQty, PV.MaxOrderQty - PV.MinOrderQty as Razlika
+from	Production.Product P inner join Production.ProductSubcategory PS
+		on P.ProductSubcategoryID = PS.ProductSubcategoryID inner join Production.ProductListPriceHistory PLH
+		on P.ProductID = PLH.ProductID inner join Purchasing.ProductVendor PV
+		on P.ProductID = PV.ProductID
+where	P.Name = @p_name or
+		P.Color = @Color or
+		PS.Name = @ps_name or
+		PLH.ListPrice = @ListPrice or
+		PV.AverageLeadTime = @AverageLeadTime or
+		PV.MinOrderQty = @MinOrderQty or
+		PV.MaxOrderQty = @MaxOrderQty or
+		PV.MaxOrderQty - PV.MinOrderQty = @Razlika
+end
+
+exec proc_Product @MaxOrderQty = '1000'
+exec proc_Product @Razlika = 350
+
+--------------------------------------------------------------------------------------------------------------------
+create database Test2
+use Test2
+go
+
+create table Proizvod
+(
+	ProizvodID int identity primary key,
+	NazivProizvoda nvarchar(255) not null,
+	Cijena int not null
+)
+
+create table PracenjePromjenaProizvoda
+(
+	PromjenaID int identity(1,1) primary key,
+	ProizvodID int not null,
+	NazivProizvoda nvarchar(255) not null,
+	Cijena int not null,
+	DatumPromjene datetime not null,
+	Operacija char(3) not null check(Operacija = 'INS' or Operacija = 'DEL')
+)
+
+create trigger	tr_Promjene
+				on Proizvod
+alter insert, delete
+as 
+begin
+insert into PracenjePromjenaProizvoda
+(
+	ProizvodID, NazivProizvoda, Cijena, DatumPromjene, Operacija
+)
+
+select i.ProizvodID, i.NazivProizvoda, i.Cijena, getdate(), 'INS'
+from inserted i
+
+union all
+select d.ProizvodID, NazivProizvoda, d.Cijena, getdate(), 'DEL'
+from deleted d
+
+insert into Proizvod
+values	('TestProizvod1', 10000),
+		('Test proizvod2', 11000)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
